@@ -52,6 +52,20 @@ public class SettingsActivity extends PreferenceActivity implements
         bindPreferenceSummaryToValue(findPreference(getString(R.string.pref_units_key)));
     }
 
+    @Override
+    protected void onResume() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
+        super.onPause();
+    }
+
     /**
      * Attaches a listener so the summary is always updated with the preference value.
      * Also fires the listener once, to initialize the summary (so it shows up before the value
@@ -63,7 +77,7 @@ public class SettingsActivity extends PreferenceActivity implements
 
         // Trigger the listener immediately with the preference's
         // current value.
-        onPreferenceChange(preference,
+        setPreferenceSummary(preference,
                 PreferenceManager
                         .getDefaultSharedPreferences(preference.getContext())
                         .getString(preference.getKey(), ""));
@@ -71,20 +85,7 @@ public class SettingsActivity extends PreferenceActivity implements
 
     @Override
     public boolean onPreferenceChange(Preference preference, Object value) {
-        String stringValue = value.toString();
-
-        if (preference instanceof ListPreference) {
-            // For list preferences, look up the correct display value in
-            // the preference's 'entries' list (since they have separate labels/values).
-            ListPreference listPreference = (ListPreference) preference;
-            int prefIndex = listPreference.findIndexOfValue(stringValue);
-            if (prefIndex >= 0) {
-                preference.setSummary(listPreference.getEntries()[prefIndex]);
-            }
-        } else {
-            // For other preferences, set the summary to the value's simple string representation.
-            preference.setSummary(stringValue);
-        }
+        setPreferenceSummary(preference, value);
         return true;
     }
 
@@ -101,6 +102,40 @@ public class SettingsActivity extends PreferenceActivity implements
             SunshineSyncAdapter.syncImmediately(this);
         } else if (s.equals(getString(R.string.pref_units_key))) {
             getContentResolver().notifyChange(WeatherContract.WeatherEntry.CONTENT_URI, null);
+        } else if (s.equals(getString(R.string.pref_location_status_key))) {
+            Preference locationPreference = findPreference(getString(R.string.pref_location_key));
+            bindPreferenceSummaryToValue(locationPreference);
+        }
+    }
+
+    private void setPreferenceSummary(Preference preference, Object value) {
+        String stringValue = value.toString();
+        String key = preference.getKey();
+
+        if (preference instanceof ListPreference) {
+            ListPreference listPreference = (ListPreference) preference;
+            int prefIndex = listPreference.findIndexOfValue(stringValue);
+            if (prefIndex >= 0) {
+                preference.setSummary(listPreference.getEntries()[prefIndex]);
+            }
+        } else if (key.equals(getString(R.string.pref_location_key))) {
+            @SunshineSyncAdapter.LocationStatus
+            int status = Utility.getLocationStatus(this);
+            switch (status) {
+                case SunshineSyncAdapter.LOCATION_STATUS_OK:
+                    preference.setSummary(stringValue);
+                    break;
+                case SunshineSyncAdapter.LOCATION_STATUS_UNKNOWN:
+                    preference.setSummary(getString(R.string.pref_location_unknown_description, value.toString()));
+                    break;
+                case SunshineSyncAdapter.LOCATION_STATUS_INVALID:
+                    preference.setSummary(getString(R.string.pref_location_error_description, value.toString()));
+                    break;
+                default:
+                    preference.setSummary(stringValue);
+            }
+        } else {
+            preference.setSummary(stringValue);
         }
     }
 }
