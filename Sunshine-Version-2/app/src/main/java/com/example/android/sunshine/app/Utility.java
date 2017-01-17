@@ -17,17 +17,12 @@ package com.example.android.sunshine.app;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.preference.PreferenceManager;
 import android.text.format.Time;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
-import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
-import com.example.android.sunshine.app.sync.SunshineSyncAdapter.LocationStatus;
 
 public class Utility {
     public static String getPreferredLocation(Context context) {
@@ -91,9 +86,9 @@ public class Utility {
             String today = context.getString(R.string.today);
             int formatId = R.string.format_full_friendly_date;
             return String.format(context.getString(
-                    formatId),
+                    formatId,
                     today,
-                    getFormattedMonthDay(context, dateInMillis));
+                    getFormattedMonthDay(context, dateInMillis)));
         } else if ( julianDay < currentJulianDay + 7 ) {
             // If the input date is less than a week in the future, just return the day name.
             return getDayName(context, dateInMillis);
@@ -250,26 +245,5 @@ public class Utility {
             return R.drawable.art_clouds;
         }
         return -1;
-    }
-
-    public static boolean isNetworkAvailable(Context context) {
-        ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-
-        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
-        return networkInfo != null && networkInfo.isConnectedOrConnecting();
-    }
-
-    @SuppressWarnings("ResourceType")
-    public static @LocationStatus
-    int getLocationStatus(Context context) {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        return sharedPreferences.getInt(context.getString(R.string.pref_location_status_key), SunshineSyncAdapter.LOCATION_STATUS_UNKNOWN);
-    }
-
-    public static void resetLocationStatus(Context context) {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putInt(context.getString(R.string.pref_location_key), SunshineSyncAdapter.LOCATION_STATUS_INVALID);
-        editor.commit();
     }
 }
